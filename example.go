@@ -1,3 +1,6 @@
+// Copyright (C) 2019 Storj Labs, Inc.
+// See LICENSE for copying information.
+
 package main
 
 import (
@@ -19,7 +22,8 @@ func main() {
 		}
 	}()
 
-	if err := file.Write("Hello"); err != nil {
+	_, err = file.Write([]byte("Hello"))
+	if err != nil {
 		panic(err)
 	}
 }
