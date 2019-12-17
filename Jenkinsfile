@@ -1,7 +1,9 @@
+docker.build("storj-ci", "https://github.com/storj/ci.git")
+
 pipeline {
     agent {
-        dockerfile {
-            filename 'ci/Dockerfile'
+        docker {
+            image 'storj-ci'
             args '-u root:root --cap-add SYS_PTRACE -v "/tmp/gomod":/go/pkg/mod'
             label 'main'
         }
@@ -27,7 +29,6 @@ pipeline {
 
         stage('Lint') {
             steps {
-                sh 'check-copyright'
                 sh 'check-copyright'
                 sh 'check-large-files'
                 sh 'check-imports ./...'
