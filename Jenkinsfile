@@ -26,7 +26,7 @@ pipeline {
         }
 
         stage('Lint') {
-            load "ci/Jenkins.shared"
+            Lint()
         }
     }
 

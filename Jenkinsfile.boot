@@ -10,6 +10,6 @@ node {
         submoduleCfg: [],
         userRemoteConfigs: [[url: 'https://github.com/storj/ci.git']]])
     
-    // run main Jenkinsfile
+    load 'Jenkins.groovy'
     load 'Jenkinsfile'
 }
