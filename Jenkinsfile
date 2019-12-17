@@ -19,26 +19,54 @@ pipeline {
             steps {
                 checkout scm
 
-                // ensure that services can start
-                sh 'service postgresql start'
-
-                sh 'cockroach start --insecure --store=\'/tmp/crdb\' --listen-addr=localhost:26257 --http-addr=localhost:8080 --join=localhost:26257 --background'
-                sh 'cockroach init --insecure --host=localhost:26257'
+                sh 'mkdir -p .build'
             }
         }
 
-        stage('Lint') {
-            steps {
-                sh 'check-copyright'
-                sh 'check-large-files'
-                sh 'check-imports ./...'
-                sh 'check-peer-constraints'
-                sh 'storj-protobuf --protoc=$HOME/protoc/bin/protoc lint'
-                sh 'storj-protobuf --protoc=$HOME/protoc/bin/protoc check-lock'
-                sh 'check-atomic-align ./...'
-                sh 'check-errs ./...'
-                sh 'staticcheck ./...'
-                sh 'golangci-lint --config /go/ci/.golangci.yml -j=2 run'
+        stage('Verification') {
+            parallel {
+                stage('Lint') {
+                    steps {
+                        sh 'check-copyright'
+                        sh 'check-large-files'
+                        sh 'check-imports ./...'
+                        sh 'check-peer-constraints'
+                        sh 'storj-protobuf --protoc=$HOME/protoc/bin/protoc lint'
+                        sh 'storj-protobuf --protoc=$HOME/protoc/bin/protoc check-lock'
+                        sh 'check-atomic-align ./...'
+                        sh 'check-errs ./...'
+                        sh 'staticcheck ./...'
+                        sh 'golangci-lint --config /go/ci/.golangci.yml -j=2 run'
+                    }
+                }
+            }
+
+            stage('Tests') {
+                environment {
+                    COVERFLAGS = "${ env.BRANCH_NAME != 'master' ? '' : '-coverprofile=.build/coverprofile -coverpkg=./...'}"
+                }
+                steps {
+                    sh 'use-ports -from 1024 -to 10000 &'
+                    sh 'go test -parallel 4 -p 6 -vet=off $COVERFLAGS -timeout 20m -json -race ./... 2>&1 | tee .build/tests.json | xunit -out .build/tests.xml'
+                    sh 'check-clean-directory'
+                }
+
+                post {
+                    always {
+                        sh script: 'cat .build/tests.json | tparse -all -top -slow 100', returnStatus: true
+                        archiveArtifacts artifacts: '.build/tests.json'
+                        junit '.build/tests.xml'
+
+                        script {
+                            if(fileExists(".build/coverprofile")){
+                                sh script: 'cover-remove-generated < .build/coverprofile > .build/clean.coverprofile', returnStatus: true
+                                sh script: 'gocov convert .build/clean.coverprofile > .build/cover.json', returnStatus: true
+                                sh script: 'gocov-xml  < .build/cover.json > .build/cobertura.xml', returnStatus: true
+                                cobertura coberturaReportFile: '.build/cobertura.xml'
+                            }
+                        }
+                    }
+                }
             }
         }
     }

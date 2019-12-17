@@ -12,6 +12,14 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	file.Write("Hello")
-	file.Close()
+
+	defer func() {
+		if err := file.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	if err := file.Write("Hello"); err != nil {
+		panic(err)
+	}
 }
