@@ -1,4 +1,6 @@
 node {
+    checkout scm
+
     checkout([
         $class: 'GitSCM',
         branches: [[name: '*/master']],
