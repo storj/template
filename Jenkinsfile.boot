@@ -9,7 +9,6 @@ node {
         relativeTargetDir: 'ci']],
         submoduleCfg: [],
         userRemoteConfigs: [[url: 'https://github.com/storj/ci.git']]])
-    
-    load 'Jenkins.groovy'
+
     load 'Jenkinsfile'
 }
