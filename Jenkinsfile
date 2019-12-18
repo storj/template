@@ -1,9 +1,9 @@
 pipeline {
     agent {
         docker {
+            label 'main'
             image docker.build("storj-ci", "https://github.com/storj/ci.git").id
             args '-u root:root --cap-add SYS_PTRACE -v "/tmp/gomod":/go/pkg/mod'
-            label 'main'
         }
     }
     options {
